@@ -15,8 +15,8 @@ type LLM interface {
 	Ask(ctx context.Context, prompt string) (string, error)
 }
 
-func NewOllamaLLM() (*OllamaLLM, error) {
-	llm, err := ollama.New(ollama.WithModel("qwen3.5:cloud"))
+func NewOllamaLLM(model string) (*OllamaLLM, error) {
+	llm, err := ollama.New(ollama.WithModel(model))
 	if err != nil {
 		log.Fatal(err)
 	}

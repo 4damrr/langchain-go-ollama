@@ -1,9 +1,9 @@
-package Nodes
+package nodes
 
 type AgentState struct {
 	Input    string `json:"input"`
 	Location string `json:"location"`
-	Weather  string `json:"Nodes"`
+	Weather  string `json:"nodes"`
 	Output   string `json:"output"`
 }
 
