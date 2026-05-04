@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"langchain-go-ollama/internal/llm"
 	"log"
 	"net/http"
+
+	"github.com/tmc/langchaingo/llms/ollama"
 )
 
 type ToolImpl struct {
-	llm *llm.OllamaLLM
+	llm *ollama.LLM
 }
 
 type Tool interface {
@@ -20,7 +21,7 @@ type Tool interface {
 	OutdoorRecommendation(ctx context.Context, weather string) (*string, error)
 }
 
-func NewTool(llm *llm.OllamaLLM) (*ToolImpl, error) {
+func NewTool(llm *ollama.LLM) (*ToolImpl, error) {
 	if llm == nil {
 		return nil, errors.New("llm is nil")
 	}
@@ -69,7 +70,7 @@ Only return the city name. No explanation.
 If there is no city name, return Bandung as default.
 `, userInput)
 
-	answer, err := n.llm.Ask(ctx, prompt)
+	answer, err := n.llm.Call(ctx, prompt)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +90,7 @@ Rules: decision should be either 'suitable' or 'not suitable' based on the weath
 no extra text outside the JSON object.
 
 The input must be the same as the user question, location must be the city name, and output must be a brief explanation of the decision.`, weather)
-	answer, err := n.llm.Ask(ctx, prompt)
+	answer, err := n.llm.Call(ctx, prompt)
 	if err != nil {
 		return nil, err
 	}

@@ -61,6 +61,41 @@ info:
   title: Weather Workflow API
   version: "1.0"
 paths:
+  /documents/ask:
+    post:
+      consumes:
+      - application/json
+      description: Retrieve relevant documents using vector search and generate an
+        answer using LLM
+      parameters:
+      - description: RAG query request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/rag.SearchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.Response'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Ask question using RAG
+      tags:
+      - rag
   /documents/raw:
     post:
       consumes:

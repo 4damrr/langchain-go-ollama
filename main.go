@@ -4,7 +4,6 @@ import (
 	"context"
 	"langchain-go-ollama/internal/documents"
 	workflow "langchain-go-ollama/internal/graph"
-	"langchain-go-ollama/internal/llm"
 	"langchain-go-ollama/internal/rag"
 	"log"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	fiberSwagger "github.com/swaggo/fiber-swagger"
+	"github.com/tmc/langchaingo/llms/ollama"
 )
 
 // @title Weather Workflow API
@@ -47,11 +47,12 @@ func main() {
 
 	defer store.Close()
 
-	workflowLLM, err := llm.NewOllamaLLM("qwen3.5:cloud")
+	ollamaLLM, err := ollama.New(ollama.WithModel("gemma4:31b-cloud"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	workflowService, err := workflow.NewWorkflowService(workflowLLM)
+
+	workflowService, err := workflow.NewWorkflowService(ollamaLLM)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,10 +77,21 @@ func main() {
 		log.Fatal(err)
 	}
 
+	generator, err := rag.NewGenerator(ollamaLLM)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ragService, err := rag.NewService(retriever, generator)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	app.Post("/weather", getWeatherHandler(workflowService))
 	app.Post("/embed", getTextEmbed(ollamaEmbed))
 	app.Post("/documents/raw", insertDocuments(ingestion))
 	app.Post("/documents/search", similaritySearch(retriever))
+	app.Post("/documents/ask", askHandler(ragService))
 
 	log.Fatal(app.Listen(":8080"))
 }
@@ -211,6 +223,41 @@ func similaritySearch(retriever *rag.Retriever) fiber.Handler {
 		return c.JSON(Response{
 			Data:  docs,
 			Count: len(docs),
+		})
+	}
+}
+
+// askHandler godoc
+// @Summary Ask question using RAG
+// @Description Retrieve relevant documents using vector search and generate an answer using LLM
+// @Tags rag
+// @Accept json
+// @Produce json
+// @Param request body rag.SearchRequest true "RAG query request"
+// @Success 200 {object} Response
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /documents/ask [post]
+func askHandler(ragService *rag.Service) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var req rag.SearchRequest
+
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(fiber.Map{
+				"error": "invalid request",
+			})
+		}
+
+		answer, err := ragService.Ask(c.Context(), req.Query, req.K)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
+		return c.JSON(Response{
+			Data:  answer,
+			Count: len(answer),
 		})
 	}
 }

@@ -2,7 +2,6 @@ package workflow
 
 import (
 	"context"
-	"langchain-go-ollama/internal/llm"
 	"langchain-go-ollama/internal/nodes"
 
 	"github.com/futurxlab/golanggraph/checkpointer"
@@ -10,13 +9,14 @@ import (
 	"github.com/futurxlab/golanggraph/flow"
 	"github.com/futurxlab/golanggraph/logger"
 	"github.com/futurxlab/golanggraph/state"
+	"github.com/tmc/langchaingo/llms/ollama"
 )
 
 type Service struct {
 	flow *flow.Flow
 }
 
-func NewWorkflowService(ollamaClient *llm.OllamaLLM) (*Service, error) {
+func NewWorkflowService(ollamaClient *ollama.LLM) (*Service, error) {
 	tools, err := nodes.NewTool(ollamaClient)
 	if err != nil {
 		return nil, err
